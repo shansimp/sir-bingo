@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sir Bingo 🎯</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0f0e17;
+      --surface: #1a1828;
+      --card: #221f35;
+      --accent: #e94560;
+      --gold: #f5c842;
+      --text: #fffffe;
+      --muted: #a7a9be;
+      --marked-bg: #e94560;
+      --marked-text: #fff;
+      --free-bg: #f5c842;
+      --free-text: #0f0e17;
+      --border: rgba(255,255,255,0.07);
+      --glow: 0 0 20px rgba(233,69,96,0.4);
+    }
+
+```
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px 48px;
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(233,69,96,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(245,200,66,0.06) 0%, transparent 60%);
+}
+
+header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.4rem, 7vw, 4rem);
+  font-weight: 900;
+  letter-spacing: -1px;
+  line-height: 1;
+  background: linear-gradient(135deg, #fff 30%, var(--gold));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+header .tagline {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin-top: 8px;
+  letter-spacing: 0.04em;
+}
+
+.score-bar {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 28px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.score-item {
+  text-align: center;
+}
+
+.score-item .val {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1;
+}
+
+.score-item .label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+
+.score-divider {
+  width: 1px;
+  height: 40px;
+  background: var(--border);
+}
+
+/* Bingo grid */
+.bingo-header-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  width: 100%;
+  max-width: 540px;
+  margin-bottom: 6px;
+}
+
+.bingo-letter {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  font-weight: 900;
+  text-align: center;
+  padding: 6px 0;
+  color: var(--accent);
+  text-shadow: var(--glow);
+}
+
+.bingo-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  width: 100%;
+  max-width: 540px;
+}
+
+.cell {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: clamp(0.58rem, 1.8vw, 0.78rem);
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  padding: 6px;
+  transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.cell:hover:not(.free) {
+  transform: scale(1.04);
+  border-color: rgba(233,69,96,0.4);
+}
+
+.cell.marked {
+  background: var(--marked-bg);
+  border-color: var(--accent);
+  box-shadow: var(--glow);
+  color: var(--marked-text);
+  font-weight: 600;
+}
+
+.cell.marked::after {
+  content: '✓';
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 0.65rem;
+  opacity: 0.7;
+}
+
+.cell.free {
+  background: var(--free-bg);
+  border-color: var(--gold);
+  color: var(--free-text);
+  font-weight: 700;
+  font-size: 0.72rem;
+  cursor: default;
+  box-shadow: 0 0 14px rgba(245,200,66,0.3);
+}
+
+.cell.bingo-line {
+  animation: pulse-bingo 0.6s ease forwards;
+}
+
+@keyframes pulse-bingo {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.12); }
+  100% { transform: scale(1.06); }
+}
+
+/* Win banner */
+.win-banner {
+  display: none;
+  background: linear-gradient(135deg, var(--accent), #ff8c42);
+  border-radius: 16px;
+  padding: 18px 32px;
+  margin: 20px 0;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(233,69,96,0.4);
+  width: 100%;
+  max-width: 540px;
+  animation: slide-in 0.4s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+}
+
+.win-banner.visible { display: block; }
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(-16px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.win-banner h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem;
+  font-weight: 900;
+}
+
+.win-banner p { font-size: 0.9rem; margin-top: 4px; opacity: 0.9; }
+
+/* Controls */
+.controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+button {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 22px;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+button:hover { transform: translateY(-2px); }
+button:active { transform: translateY(0); }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(233,69,96,0.35);
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+}
+
+.btn-gold {
+  background: var(--gold);
+  color: var(--bg);
+  box-shadow: 0 4px 14px rgba(245,200,66,0.25);
+}
+
+/* Sync badge */
+.sync-status {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sync-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4caf50;
+  animation: blink 2s infinite;
+}
+
+.sync-dot.offline { background: #888; animation: none; }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+/* Firebase config panel */
+.config-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 24px;
+  width: 100%;
+  max-width: 540px;
+  margin-top: 32px;
+}
+
+.config-panel h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  margin-bottom: 12px;
+  color: var(--gold);
+}
+
+.config-panel p {
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+.config-panel input {
+  width: 100%;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 10px 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  margin-bottom: 10px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.config-panel input:focus { border-color: var(--accent); }
+
+.config-panel code {
+  background: var(--card);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  color: var(--gold);
+}
+
+.toggle-config {
+  font-size: 0.78rem;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: 'DM Sans', sans-serif;
+  margin-top: 16px;
+  transform: none;
+}
+
+.toggle-config:hover { color: var(--text); transform: none; }
+
+footer {
+  margin-top: 40px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-align: center;
+  opacity: 0.5;
+}
+```
+
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Sir Bingo</h1>
+  <p class="tagline">Mark it every time someone calls you "sir" 🎯</p>
+</header>
+
+<div class="score-bar">
+  <div class="score-item">
+    <div class="val" id="sir-count">0</div>
+    <div class="label">Sir Count</div>
+  </div>
+  <div class="score-divider"></div>
+  <div class="score-item">
+    <div class="val" id="marked-count">0</div>
+    <div class="label">Squares Marked</div>
+  </div>
+  <div class="score-divider"></div>
+  <div class="score-item">
+    <div class="val" id="bingo-count">0</div>
+    <div class="label">Bingos!</div>
+  </div>
+</div>
+
+<div class="win-banner" id="win-banner">
+  <h2>🎉 BINGO!</h2>
+  <p id="win-text">You got a line!</p>
+</div>
+
+<div class="bingo-header-row">
+  <div class="bingo-letter">B</div>
+  <div class="bingo-letter">I</div>
+  <div class="bingo-letter">N</div>
+  <div class="bingo-letter">G</div>
+  <div class="bingo-letter">O</div>
+</div>
+
+<div class="bingo-grid" id="bingo-grid"></div>
+
+<div class="controls">
+  <button class="btn-primary" onclick="logSir()">+1 Sir! 🫡</button>
+  <button class="btn-secondary" onclick="resetMarked()">Clear Marks</button>
+  <button class="btn-gold" onclick="newCard()">New Card</button>
+</div>
+
+<div class="sync-status">
+  <div class="sync-dot offline" id="sync-dot"></div>
+  <span id="sync-label">Saved locally</span>
+</div>
+
+<button class="toggle-config" onclick="toggleConfig()">⚙️ Enable cross-device sync (optional)</button>
+
+<div class="config-panel" id="config-panel" style="display:none">
+  <h3>🔥 Cross-Device Sync via Firebase</h3>
+  <p>
+    To sync across devices (free!): create a project at
+    <strong>firebase.google.com</strong> → Firestore Database → start in test mode.
+    Then grab your config values below. Use a shared <code>Room ID</code> on both devices.
+  </p>
+  <input id="fb-api-key" placeholder="Firebase apiKey" />
+  <input id="fb-project-id" placeholder="Firebase projectId" />
+  <input id="fb-room" placeholder="Room ID (e.g. shannon-tyler)" />
+  <button class="btn-primary" onclick="saveFirebaseConfig()" style="width:100%">Connect Firebase</button>
+  <p style="margin-top:10px; font-size:0.75rem">
+    Your config is stored only in this browser. The game data saved is just square states — nothing personal.
+  </p>
+</div>
+
+<footer>Built with ❤️ — tap any square to mark it, +1 Sir to log the moment</footer>
+
+<!-- Firebase SDK (loaded conditionally) -->
+
+<script type="module">
+  // ── Square definitions ──────────────────────────────────────────────────
+  const ALL_SQUARES = [
+    "Drive-through window",
+    "Restaurant server",
+    "Phone call / customer service",
+    "Gas station attendant",
+    "Grocery store cashier",
+    "Hardware store",
+    "Doctor's office",
+    "Airport / TSA",
+    "Hotel front desk",
+    "Gym / fitness class",
+    "Pharmacy counter",
+    "Bank teller",
+    "Uber / Lyft driver",
+    "Post office",
+    "Waiter says it twice",
+    "Stranger on the street",
+    "Retail store associate",
+    "Self-checkout assistant",
+    "Coffee shop barista",
+    "Car wash / mechanic",
+    "Corrects themselves",
+    "Uses 'sir' AND 'ma'am'",
+    "Food delivery person",
+    "Park / trail stranger",
+  ];
+
+  const FREE_INDEX = 12; // center of 5x5
+
+  // ── State ────────────────────────────────────────────────────────────────
+  let state = {
+    squares: [],   // array of 25 strings (square labels)
+    marked: [],    // array of 25 booleans
+    sirCount: 0,
+    bingoCount: 0,
+    announcedLines: [],
+  };
+
+  // ── Persistence helpers ──────────────────────────────────────────────────
+  const STORAGE_KEY = 'sir-bingo-v2';
+
+  function saveLocal() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function loadLocal() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      try { state = JSON.parse(raw); return true; } catch {}
+    }
+    return false;
+  }
+
+  // ── Firebase (optional) ──────────────────────────────────────────────────
+  let db = null;
+  let fbRoom = null;
+  let unsubscribe = null;
+
+  async function initFirebase(apiKey, projectId, room) {
+    try {
+      const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
+      const { getFirestore, doc, setDoc, onSnapshot } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+
+      const app = initializeApp({ apiKey, projectId, authDomain: `${projectId}.firebaseapp.com` }, 'sir-bingo');
+      db = getFirestore(app);
+      fbRoom = room;
+
+      const ref = doc(db, 'bingo-rooms', room);
+
+      // Listen for remote changes
+      unsubscribe = onSnapshot(ref, (snap) => {
+        if (snap.exists()) {
+          const remote = snap.data();
+          state = remote;
+          render();
+          saveLocal();
+        }
+      });
+
+      setSyncStatus(true);
+      // Push current state up
+      await setDoc(ref, state);
+      return true;
+    } catch (e) {
+      console.error('Firebase init failed:', e);
+      return false;
+    }
+  }
+
+  async function pushToFirebase() {
+    if (!db || !fbRoom) return;
+    try {
+      const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+      await setDoc(doc(db, 'bingo-rooms', fbRoom), state);
+    } catch (e) { console.warn('Firebase push failed', e); }
+  }
+
+  function setSyncStatus(online) {
+    const dot = document.getElementById('sync-dot');
+    const label = document.getElementById('sync-label');
+    if (online) {
+      dot.classList.remove('offline');
+      label.textContent = 'Synced across devices ✓';
+    } else {
+      dot.classList.add('offline');
+      label.textContent = 'Saved locally';
+    }
+  }
+
+  // ── Card generation ──────────────────────────────────────────────────────
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function generateCard() {
+    const picks = shuffle(ALL_SQUARES).slice(0, 24);
+    picks.splice(FREE_INDEX, 0, 'FREE SPACE ⭐');
+    state.squares = picks;
+    state.marked = Array(25).fill(false);
+    state.marked[FREE_INDEX] = true; // free space always marked
+    state.bingoCount = 0;
+    state.announcedLines = [];
+  }
+
+  // ── Bingo logic ──────────────────────────────────────────────────────────
+  const LINES = [];
+  // rows
+  for (let r = 0; r < 5; r++) {
+    const line = [];
+    for (let c = 0; c < 5; c++) line.push(r * 5 + c);
+    LINES.push(line);
+  }
+  // cols
+  for (let c = 0; c < 5; c++) {
+    const line = [];
+    for (let r = 0; r < 5; r++) line.push(r * 5 + c);
+    LINES.push(line);
+  }
+  // diagonals
+  LINES.push([0, 6, 12, 18, 24]);
+  LINES.push([4, 8, 12, 16, 20]);
+
+  function checkBingo() {
+    let newBingos = 0;
+    const newLines = [];
+    for (const line of LINES) {
+      const key = line.join('-');
+      if (line.every(i => state.marked[i]) && !state.announcedLines.includes(key)) {
+        newBingos++;
+        newLines.push(key);
+        highlightLine(line);
+      }
+    }
+    if (newBingos > 0) {
+      state.bingoCount += newBingos;
+      state.announcedLines.push(...newLines);
+      showWinBanner(newBingos);
+    }
+  }
+
+  function highlightLine(line) {
+    line.forEach(i => {
+      const el = document.querySelector(`[data-index="${i}"]`);
+      if (el) el.classList.add('bingo-line');
+    });
+  }
+
+  function showWinBanner(count) {
+    const banner = document.getElementById('win-banner');
+    const text = document.getElementById('win-text');
+    text.textContent = count === 1
+      ? `Line complete! Total bingos: ${state.bingoCount}`
+      : `${count} new bingos! Total: ${state.bingoCount}`;
+    banner.classList.add('visible');
+    setTimeout(() => banner.classList.remove('visible'), 3500);
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────────
+  function render() {
+    const grid = document.getElementById('bingo-grid');
+    grid.innerHTML = '';
+
+    state.squares.forEach((label, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.index = i;
+      cell.textContent = label;
+
+      if (i === FREE_INDEX) {
+        cell.classList.add('free');
+      } else if (state.marked[i]) {
+        cell.classList.add('marked');
+      }
+
+      if (!state.marked[i] && i !== FREE_INDEX) {
+        cell.addEventListener('click', () => toggleCell(i));
+      }
+
+      grid.appendChild(cell);
+    });
+
+    // Re-highlight bingo lines already completed
+    for (const key of (state.announcedLines || [])) {
+      const line = key.split('-').map(Number);
+      highlightLine(line);
+    }
+
+    document.getElementById('sir-count').textContent = state.sirCount || 0;
+    document.getElementById('marked-count').textContent = (state.marked || []).filter((v, i) => v && i !== FREE_INDEX).length;
+    document.getElementById('bingo-count').textContent = state.bingoCount || 0;
+  }
+
+  // ── Actions ──────────────────────────────────────────────────────────────
+  window.toggleCell = function(i) {
+    state.marked[i] = !state.marked[i];
+    if (state.marked[i]) {
+      state.sirCount = (state.sirCount || 0) + 1;
+      checkBingo();
+    }
+    render();
+    saveLocal();
+    pushToFirebase();
+  };
+
+  window.logSir = function() {
+    state.sirCount = (state.sirCount || 0) + 1;
+    render();
+    saveLocal();
+    pushToFirebase();
+    // Flash score
+    const el = document.getElementById('sir-count');
+    el.style.color = '#e94560';
+    setTimeout(() => el.style.color = '', 400);
+  };
+
+  window.resetMarked = function() {
+    state.marked = Array(25).fill(false);
+    state.marked[FREE_INDEX] = true;
+    state.bingoCount = 0;
+    state.announcedLines = [];
+    render();
+    saveLocal();
+    pushToFirebase();
+  };
+
+  window.newCard = function() {
+    if (!confirm('Generate a new bingo card? Current progress will be lost.')) return;
+    generateCard();
+    state.sirCount = 0;
+    render();
+    saveLocal();
+    pushToFirebase();
+  };
+
+  // ── Firebase config panel ────────────────────────────────────────────────
+  const FB_CFG_KEY = 'sir-bingo-fb-config';
+
+  window.toggleConfig = function() {
+    const panel = document.getElementById('config-panel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  };
+
+  window.saveFirebaseConfig = async function() {
+    const apiKey = document.getElementById('fb-api-key').value.trim();
+    const projectId = document.getElementById('fb-project-id').value.trim();
+    const room = document.getElementById('fb-room').value.trim();
+    if (!apiKey || !projectId || !room) {
+      alert('Please fill in all three fields.');
+      return;
+    }
+    localStorage.setItem(FB_CFG_KEY, JSON.stringify({ apiKey, projectId, room }));
+    const ok = await initFirebase(apiKey, projectId, room);
+    if (ok) {
+      alert('✅ Firebase connected! Open this page on any device with the same Room ID to sync.');
+      document.getElementById('config-panel').style.display = 'none';
+    } else {
+      alert('❌ Connection failed. Check your Firebase config values.');
+    }
+  };
+
+  // ── Boot ─────────────────────────────────────────────────────────────────
+  async function boot() {
+    const loaded = loadLocal();
+    if (!loaded || !state.squares || state.squares.length !== 25) {
+      generateCard();
+      saveLocal();
+    }
+    render();
+
+    // Try restoring Firebase config
+    const fbCfgRaw = localStorage.getItem(FB_CFG_KEY);
+    if (fbCfgRaw) {
+      try {
+        const { apiKey, projectId, room } = JSON.parse(fbCfgRaw);
+        document.getElementById('fb-api-key').value = apiKey;
+        document.getElementById('fb-project-id').value = projectId;
+        document.getElementById('fb-room').value = room;
+        await initFirebase(apiKey, projectId, room);
+      } catch {}
+    }
+  }
+
+  boot();
+</script>
+
+</body>
+</html>
+
